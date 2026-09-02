@@ -286,7 +286,7 @@ function show(i){
  markActive();
  window.scrollTo(0,0);location.hash='s'+i;
 }
-function showCover(){current=-1;currentId=null;var total=DATA.length;var html='<div class="cover"><div class="k">한 줄 한 호흡</div><h1>명상 스크립트</h1><p>마음이 쉬어가는 '+total+'편의 안내문</p>';html+='<div class="stat"><div><b>'+total+'</b>편</div><div><b>'+CAT.keys.length+'</b>갈래</div><div><b>'+SER.keys.length+'</b>시리즈</div></div>';html+='<p style="margin-top:44px;font-size:14px">위 <b>상단 메뉴</b>에서 카테고리를, <b>왼쪽 첫 열</b>에서 시리즈를 고르고,<br>➕ 새 스크립트 / ✏️ 수정 / 🗑️ 삭제로 관리할 수 있어요.</p></div>';document.getElementById('reader').innerHTML=html;location.hash='';markActive();}
+function showCover(){current=-1;currentId=null;var total=DATA.length;var html='<div class="cover"><div class="k">한 줄 한 호흡</div><h1>명상 스크립트</h1><p>마음이 쉬어가는 '+total+'편의 안내문</p>';html+='<div class="stat"><div><b>'+total+'</b>편</div><div><b>'+CAT.keys.length+'</b>갈래</div><div><b>'+SER.keys.length+'</b>시리즈</div></div>';html+='</div>';document.getElementById('reader').innerHTML=html;location.hash='';markActive();}
 function closeNav(){document.body.classList.remove('nav-open');}
 /* ===== 동기화 ===== */
 function loadLiveP(){return new Promise(function(resolve){
