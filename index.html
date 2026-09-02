@@ -370,7 +370,7 @@ async function doDelete(d){
 document.getElementById('menubtn').onclick=function(){document.body.classList.toggle('nav-open');};
 document.getElementById('brand').onclick=function(){showCover();closeNav();document.getElementById('reader').scrollTop=0;window.scrollTo(0,0);};
 document.getElementById('backdrop').onclick=closeNav;
-document.getElementById('search').oninput=function(e){searchText=e.target.value;buildMenu();buildSeries();renderList();};
+document.getElementById('search').oninput=function(e){searchText=e.target.value;buildMenu();buildSeries();renderList();if(window.innerWidth<=880&&searchText.trim())document.body.classList.add('nav-open');};
 document.getElementById('darkbtn').onclick=function(){var on=localStorage.getItem('med_dark')==='1';localStorage.setItem('med_dark',on?'0':'1');applyDark();document.getElementById('darkbtn').textContent=on?'🌙':'☀️';};
 document.getElementById('fsminus').onclick=function(){var v=Math.max(14,(parseFloat(localStorage.getItem('med_fs')||'18.5'))-1);localStorage.setItem('med_fs',v);applyFS();};
 document.getElementById('fsplus').onclick=function(){var v=Math.min(28,(parseFloat(localStorage.getItem('med_fs')||'18.5'))+1);localStorage.setItem('med_fs',v);applyFS();};
