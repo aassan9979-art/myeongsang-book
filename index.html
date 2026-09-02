@@ -311,18 +311,26 @@ async function syncNow(silent){
 /* ===== 쓰기 ===== */
 function getToken(){var t=localStorage.getItem('med_token');if(!t){t=prompt('편집 비밀번호를 입력하세요');if(t){t=t.trim();localStorage.setItem('med_token',t);}}return t;}
 function genId(){return (Date.now().toString(16)+Math.floor(Math.random()*65536).toString(16)).slice(0,8);}
-async function apiWrite(action,payload,verify){
+var _syncTimer=null;
+function syncSoon(verify){
+ if(_syncTimer)clearTimeout(_syncTimer);
+ _syncTimer=setTimeout(async function(){
+  _syncTimer=null;
+  var live=await loadLiveP();
+  if(!live)return; /* 조용히 — 다음 로드 때 동기화됨 */
+  hasLive=true;
+  if(verify&&!verify(live)){localStorage.removeItem('med_token');toast('저장이 반영되지 않았어요. 비밀번호가 틀렸거나 오류일 수 있어요. 다시 시도해 주세요.');}
+  setData(live);
+ },1800);
+}
+async function apiWrite(action,payload,apply,verify){
  var token=getToken();if(!token){toast('취소되었습니다.');return false;}
  var bodyObj=Object.assign({token:token,action:action},payload);
- try{await fetch(API_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(bodyObj)});}catch(e){}
- await sleep(1500);
- var live=await loadLiveP();
- if(!live){toast('저장은 보냈지만 확인에 실패했어요(연결 문제). 새로고침 후 확인해 주세요.');return false;}
- hasLive=true;
- var okv=verify?verify(live):true;
- if(!okv){localStorage.removeItem('med_token');toast('저장이 반영되지 않았어요. 비밀번호가 틀렸거나 오류일 수 있어요. 다시 시도해 주세요.');}
- setData(live);
- return okv;
+ try{fetch(API_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(bodyObj)}).catch(function(){});}catch(e){}
+ if(apply){try{apply();}catch(e){}}
+ hasLive=true;reindex();buildMenu();buildSeries();renderList();
+ syncSoon(verify);
+ return true;
 }
 function catOptions(){return CATORDER.concat(Object.keys(grp('category',CATORDER).g).filter(function(k){return CATORDER.indexOf(k)<0;}));}
 function fillSelect(sel,arr,val){sel.innerHTML='';arr.forEach(function(o){var op=document.createElement('option');op.value=o;op.textContent=o;if(o===val)op.selected=true;sel.appendChild(op);});}
@@ -350,12 +358,12 @@ async function saveEditor(){
  var ok;
  if(editMode==='add'){
   var nid=genId();rec.id=nid;
-  ok=await apiWrite('add',{record:rec},function(live){return live.some(function(x){return x.id===nid;});});
+  ok=await apiWrite('add',{record:rec},function(){DATA.push(rec);},function(live){return live.some(function(x){return x.id===nid;});});
   if(ok){closeEditor();toast('추가되었습니다.');currentId=nid;var idx=-1;for(var i=0;i<DATA.length;i++){if(DATA[i].id===nid){idx=i;break;}}if(idx>=0)show(idx);}
  }else{
   rec.id=editId;
-  ok=await apiWrite('update',{record:rec},function(live){var f=live.filter(function(x){return x.id===editId;})[0];return f&&f.title===title&&f.body===body;});
-  if(ok){closeEditor();toast('수정되었습니다.');}
+  ok=await apiWrite('update',{record:rec},function(){for(var i=0;i<DATA.length;i++){if(DATA[i].id===editId){DATA[i]=Object.assign({},DATA[i],rec);break;}}},function(live){var f=live.filter(function(x){return x.id===editId;})[0];return f&&f.title===title&&f.body===body;});
+  if(ok){closeEditor();toast('수정되었습니다.');var ix=-1;for(var i=0;i<DATA.length;i++){if(DATA[i].id===editId){ix=i;break;}}if(ix>=0)show(ix);}
  }
  save.disabled=false;save.textContent='저장';
 }
@@ -363,7 +371,7 @@ async function doDelete(d){
  if(!d||!d.id){toast('저장된 항목만 삭제할 수 있어요.');return;}
  if(!confirm('“'+d.title+'”\n정말 삭제할까요? 되돌릴 수 없습니다.'))return;
  var delId=d.id;
- var ok=await apiWrite('delete',{id:delId},function(live){return !live.some(function(x){return x.id===delId;});});
+ var ok=await apiWrite('delete',{id:delId},function(){for(var i=0;i<DATA.length;i++){if(DATA[i].id===delId){DATA.splice(i,1);break;}}},function(live){return !live.some(function(x){return x.id===delId;});});
  if(ok){toast('삭제되었습니다.');showCover();}
 }
 /* ===== 이벤트 ===== */
