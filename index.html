@@ -157,7 +157,11 @@ var CATORDER=['멈춤','관찰','수용','탈중심화','자비희사','용서�
 var SERORDER=['숨비명상','표현명상','늘봄명상','무두선'];
 var hasLive=false, current=-1, currentId=null;
 var favs=JSON.parse(localStorage.getItem('med_favs')||'[]');
-var curFilter=localStorage.getItem('med_filter')||'all';
+var _oldFilter=localStorage.getItem('med_filter')||'';
+var curCat=localStorage.getItem('med_cat');
+var curSer=localStorage.getItem('med_ser');
+if(curCat===null){curCat=(_oldFilter==='fav'?'fav':(_oldFilter.indexOf('cat:')===0?_oldFilter.slice(4):'all'));}
+if(curSer===null){curSer=(_oldFilter.indexOf('ser:')===0?_oldFilter.slice(4):'all');}
 var searchText='';
 var CAT,SER;
 function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -171,13 +175,17 @@ function applyFS(){document.documentElement.style.setProperty('--bodyfs',(localS
 function applyDark(){document.body.classList.toggle('dark',localStorage.getItem('med_dark')==='1');}
 function setHH(){var tb=document.getElementById('topbar');if(tb)document.documentElement.style.setProperty('--hh',tb.offsetHeight+'px');}
 function matchFn(q){return function(d){return d.title.toLowerCase().indexOf(q)>=0||d.body.toLowerCase().indexOf(q)>=0;};}
-function setFilter(k){curFilter=k;localStorage.setItem('med_filter',k);searchText='';document.getElementById('search').value='';buildMenu();buildSeries();renderList();document.getElementById('toc').scrollTop=0;closeNav();}
+function passCat(d){return curCat==='all'?true:(curCat==='fav'?isFav(d):d.category===curCat);}
+function passSer(d){return curSer==='all'?true:d.series===curSer;}
+function afterFilter(){searchText='';document.getElementById('search').value='';buildMenu();buildSeries();renderList();document.getElementById('toc').scrollTop=0;}
+function setCat(v){curCat=v;localStorage.setItem('med_cat',v);afterFilter();}
+function setSer(v){curSer=v;localStorage.setItem('med_ser',v);afterFilter();}
 /* ===== 상단 카테고리 메뉴 ===== */
 function buildMenu(){
  var menu=document.getElementById('catmenu');menu.innerHTML='';
- function mk(k,label,cls){var b=document.createElement('button');b.className='mi'+(cls?' '+cls:'')+((!searchText&&curFilter===k)?' on':'');b.textContent=label;b.onclick=function(){setFilter(k);};menu.appendChild(b);}
+ function mk(v,label,cls){var b=document.createElement('button');b.className='mi'+(cls?' '+cls:'')+((!searchText&&curCat===v)?' on':'');b.textContent=label;b.onclick=function(){setCat(v);};menu.appendChild(b);}
  mk('all','전체');
- CAT.keys.forEach(function(c){mk('cat:'+c,c);});
+ CAT.keys.forEach(function(c){mk(c,c);});
  var s=document.createElement('span');s.className='msep';menu.appendChild(s);
  mk('fav','★ 즐겨찾기','fav');
 }
@@ -186,12 +194,14 @@ function buildSeries(){
  var col=document.getElementById('seriescol');col.innerHTML='';
  var lab=document.createElement('div');lab.className='scol-h';lab.textContent='시리즈';col.appendChild(lab);
  var mb=document.getElementById('seriesmenu');if(mb)mb.innerHTML='';
- SER.keys.forEach(function(s){
-  var on=(!searchText&&curFilter==='ser:'+s);
-  var b=document.createElement('button');b.className='si'+(on?' on':'');b.textContent=s;
-  b.onclick=function(){setFilter('ser:'+s);};col.appendChild(b);
-  if(mb){var b2=document.createElement('button');b2.className='mi'+(on?' on':'');b2.textContent=s;b2.onclick=function(){setFilter('ser:'+s);};mb.appendChild(b2);}
- });
+ function add(v,label){
+  var on=(!searchText&&curSer===v);
+  var b=document.createElement('button');b.className='si'+(on?' on':'');b.textContent=label;
+  b.onclick=function(){setSer(v);};col.appendChild(b);
+  if(mb){var b2=document.createElement('button');b2.className='mi'+(on?' on':'');b2.textContent=label;b2.onclick=function(){setSer(v);};mb.appendChild(b2);}
+ }
+ add('all','전체');
+ SER.keys.forEach(function(s){add(s,s);});
 }
 /* ===== 목록 ===== */
 function itemLink(d,metaField){
@@ -212,7 +222,8 @@ function renderList(){
   var box=document.createElement('div');box.className='items';res.forEach(function(d){box.appendChild(itemLink(d,'category'));});host.appendChild(box);
   markActive();return;
  }
- if(curFilter==='all'){
+ var catAll=(curCat==='all'),serAll=(curSer==='all');
+ if(catAll&&serAll){
   var h0=document.createElement('div');h0.className='listhead';h0.innerHTML='전체<span class="c">'+DATA.length+'편</span>';host.appendChild(h0);
   CAT.keys.forEach(function(c){
    var lab=document.createElement('div');lab.className='grouplabel';lab.textContent=c+' ('+CAT.g[c].length+')';host.appendChild(lab);
@@ -220,14 +231,24 @@ function renderList(){
   });
   markActive();return;
  }
- var items,title,metaField;
- if(curFilter==='fav'){items=DATA.filter(isFav);title='★ 즐겨찾기';metaField='category';}
- else if(curFilter.indexOf('cat:')===0){var c=curFilter.slice(4);items=CAT.g[c]||[];title=c;metaField='series';}
- else if(curFilter.indexOf('ser:')===0){var s=curFilter.slice(4);items=SER.g[s]||[];title=s;metaField='category';}
- else {items=DATA;title='전체';metaField='category';}
+ var items=DATA.filter(function(d){return passCat(d)&&passSer(d);});
+ var parts=[];
+ if(!serAll)parts.push(curSer);
+ if(!catAll)parts.push(curCat==='fav'?'★ 즐겨찾기':curCat);
+ var title=parts.join(' · ');
  var hh=document.createElement('div');hh.className='listhead';hh.innerHTML=esc(title)+'<span class="c">'+items.length+'편</span>';host.appendChild(hh);
- if(!items.length){host.insertAdjacentHTML('beforeend','<div class="empty">'+(curFilter==='fav'?'아직 즐겨찾기가 없습니다.<br>본문 제목 옆의 ☆를 눌러 담아 보세요.':'항목이 없습니다.')+'</div>');return;}
- var box2=document.createElement('div');box2.className='items';items.forEach(function(d){box2.appendChild(itemLink(d,metaField));});host.appendChild(box2);
+ if(!items.length){host.insertAdjacentHTML('beforeend','<div class="empty">'+(curCat==='fav'&&serAll?'아직 즐겨찾기가 없습니다.<br>본문 제목 옆의 ☆를 눌러 담아 보세요.':'조건에 맞는 스크립트가 없습니다.')+'</div>');return;}
+ if(!serAll&&catAll){
+  CAT.keys.forEach(function(c){
+   var sub=items.filter(function(d){return d.category===c;});
+   if(!sub.length)return;
+   var lab=document.createElement('div');lab.className='grouplabel';lab.textContent=c+' ('+sub.length+')';host.appendChild(lab);
+   var box=document.createElement('div');box.className='items';sub.forEach(function(d){box.appendChild(itemLink(d,'series'));});host.appendChild(box);
+  });
+ }else{
+  var metaField=(!serAll)?'category':'series';
+  var box2=document.createElement('div');box2.className='items';items.forEach(function(d){box2.appendChild(itemLink(d,metaField));});host.appendChild(box2);
+ }
  markActive();
 }
 function markActive(){
