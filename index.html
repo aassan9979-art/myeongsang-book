@@ -175,7 +175,7 @@ function setHH(){var tb=document.getElementById('topbar');if(tb)document.documen
 function matchFn(q){return function(d){return d.title.toLowerCase().indexOf(q)>=0||d.body.toLowerCase().indexOf(q)>=0;};}
 function passCat(d){return curCat==='all'?true:(curCat==='fav'?isFav(d):d.category===curCat);}
 function passSer(d){return curSer==='all'?true:d.series===curSer;}
-function afterFilter(){searchText='';document.getElementById('search').value='';buildMenu();buildSeries();renderList();document.getElementById('toc').scrollTop=0;}
+function afterFilter(){searchText='';document.getElementById('search').value='';buildMenu();buildSeries();renderList();document.getElementById('toc').scrollTop=0;if(window.innerWidth<=880)document.body.classList.add('nav-open');}
 function setCat(v){curCat=v;localStorage.setItem('med_cat',v);afterFilter();}
 function setSer(v){curSer=v;localStorage.setItem('med_ser',v);afterFilter();}
 /* ===== 상단 카테고리 메뉴 ===== */
