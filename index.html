@@ -14,7 +14,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Noto Serif KR',serif;lin
 a{color:inherit;text-decoration:none}
 #topbar{position:sticky;top:0;z-index:50;background:var(--paper);border-bottom:1px solid var(--line)}
 .tb-top{display:flex;align-items:center;gap:12px;padding:12px 22px 8px}
-.tb-brand{font-size:19px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.tb-brand{font-size:19px;font-weight:700;letter-spacing:.02em;white-space:nowrap;cursor:pointer}
+.tb-brand:hover{color:var(--accent)}
 .tb-sub{font-size:11.5px;color:var(--soft);white-space:nowrap}
 .tb-tools{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 #search{width:210px;padding:9px 13px;border:1px solid var(--line);border-radius:9px;font-family:inherit;font-size:14px;background:var(--bg);color:var(--ink)}
@@ -116,7 +117,7 @@ body.dark .cbtn.save{color:#17140f}
 <header id="topbar">
  <div class="tb-top">
   <div id="menubtn">☰</div>
-  <div class="tb-brand">명상 스크립트</div>
+  <div class="tb-brand" id="brand" title="홈으로">명상 스크립트</div>
   <span class="tb-sub" id="synced">동기화 확인 중…</span>
   <div class="tb-tools">
    <input id="search" placeholder="제목·본문 검색">
@@ -339,6 +340,7 @@ async function doDelete(d){
 }
 /* ===== 이벤트 ===== */
 document.getElementById('menubtn').onclick=function(){document.body.classList.toggle('nav-open');};
+document.getElementById('brand').onclick=function(){showCover();closeNav();document.getElementById('reader').scrollTop=0;window.scrollTo(0,0);};
 document.getElementById('backdrop').onclick=closeNav;
 document.getElementById('search').oninput=function(e){searchText=e.target.value;buildMenu();buildSeries();renderList();};
 document.getElementById('darkbtn').onclick=function(){var on=localStorage.getItem('med_dark')==='1';localStorage.setItem('med_dark',on?'0':'1');applyDark();document.getElementById('darkbtn').textContent=on?'🌙':'☀️';};
